@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Triagem Médica</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        h1 { text-align: center; color: #333; }
+        .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .btn-logout { background-color: #333; color: white; padding: 8px 12px; text-decoration: none; border-radius: 4px; font-size: 14px; }
+        .card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-primary { background-color: #0056b3; color: white; }
+        .btn-primary:hover { background-color: #004494; }
+        .btn-warning { background-color: #f39c12; color: white; }
+        .btn-danger { background-color: #e74c3c; color: white; }
+        .paciente-item { padding: 15px; border-left: 5px solid; border-radius: 4px; background: #fafafa; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .risco-Vermelho { border-color: #e74c3c; }
+        .risco-Amarelo { border-color: #f1c40f; }
+        .risco-Verde { border-color: #2ecc71; }
+        .acoes button { margin-left: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-bar">
+            <h1>Painel de Triagem Médica</h1>
+            <a href="/logout" class="btn-logout">Sair do Sistema</a>
+        </div>
+        
+        <div class="card">
+            <h3>Registrar Novo Paciente</h3>
+            <form id="formTriagem">
+                <div class="form-group">
+                    <label>Nome do Paciente:</label>
+                    <input type="text" id="nome" placeholder="Ex: Maria Silva" required>
+                </div>
+                <div class="form-group">
+                    <label>Sintoma Principal:</label>
+                    <select id="sintoma" required>
+                        <option value="">-- Selecione o Sintoma --</option>
+                        <option value="Dor no peito irradiando">Dor no peito irradiando</option>
+                        <option value="Falta de ar">Falta de ar</option>
+                        <option value="Febre alta e tosse">Febre alta e tosse</option>
+                        <option value="Dor de cabeça intensa">Dor de cabeça intensa</option>
+                        <option value="Dor abdominal intensa">Dor abdominal intensa</option>
+                        <option value="Suspeita de fratura">Suspeita de fratura</option>
+                        <option value="Corte profundo / sangramento">Corte profundo / sangramento</option>
+                        <option value="Queimadura">Queimadura</option>
+                        <option value="Vômito e diarreia persistentes">Vômito e diarreia persistentes</option>
+                        <option value="Tontura e desmaio">Tontura e desmaio</option>
+                        <option value="Pressão alta">Pressão alta</option>
+                        <option value="Convulsão">Convulsão</option>
+                        <option value="Alergia / reação alérgica">Alergia / reação alérgica</option>
+                        <option value="Dor lombar">Dor lombar</option>
+                        <option value="Renovação de receita">Renovação de receita</option>
+                        <option value="Consulta de rotina">Consulta de rotina</option>
+                        <option value="Outro">Outro</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Classificação de Risco (Triagem):</label>
+                    <select id="triagem" required>
+                        <option value="">-- Selecione o Risco --</option>
+                        <option value="Vermelho">Vermelho (Emergência)</option>
+                        <option value="Amarelo">Amarelo (Urgente)</option>
+                        <option value="Verde">Verde (Pouco Urgente)</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-primary" id="btnSalvar">Salvar Registro</button>
+                <button type="button" class="btn-warning" id="btnCancelar" style="display:none;" onclick="resetarFormulario()">Cancelar Edição</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h3>Fila de Atendimento (Prioridade por Risco + Ordem de Chegada)</h3>
+            <div id="listaPacientes">
+                <!-- A lista será gerada aqui pelo JS -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let pacienteEmEdicaoId = null;
+        let pacientesCache = []; // guarda a última lista carregada, usado pelos botões Editar/Excluir
+
+        // FUNÇÃO: Carregar lista da base com tratamento de erros
+        function carregarPacientes() {
+            fetch('/api/v1/pacientes')
+                .then(response => {
+                    if (!response.ok) throw new Error(`Erro HTTP ${response.status}`);
+                    return response.json();
+                })
+                .then(data => {
+                    pacientesCache = data.data;
+                    const lista = document.getElementById('listaPacientes');
+                    lista.innerHTML = '';
+                    
+                    if(pacientesCache.length === 0) {
+                        lista.innerHTML = '<p style="text-align: center; color: #777;">A fila está vazia no momento.</p>';
+                        return;
+                    }
+
+                    pacientesCache.forEach(p => {
+                        const div = document.createElement('div');
+                        div.className = `paciente-item risco-${p.triagem}`;
+                        div.innerHTML = `
+                            <div>
+                                <strong>[#${p.id}] ${escapeHtml(p.nome.toUpperCase())}</strong><br>
+                                Sintoma: ${escapeHtml(p.sintoma)}<br>
+                                Risco: <strong>${escapeHtml(p.triagem)}</strong>
+                            </div>
+                            <div class="acoes">
+                                <button class="btn-warning btn-editar" data-id="${p.id}">Editar</button>
+                                <button class="btn-danger btn-excluir" data-id="${p.id}">Excluir</button>
+                            </div>
+                        `;
+                        lista.appendChild(div);
+                    });
+                })
+                .catch(err => {
+                    console.error('Erro ao carregar pacientes:', err);
+                    alert('Falha ao comunicar com o servidor (Fila). Verifique o console (F12).');
+                });
+        }
+
+        // Evita que nomes/sintomas com HTML quebrem a página (proteção extra além do bug do apóstrofo)
+        function escapeHtml(texto) {
+            const div = document.createElement('div');
+            div.textContent = texto ?? '';
+            return div.innerHTML;
+        }
+
+        // DELEGAÇÃO DE EVENTOS: resolve o bug de apóstrofo nos nomes (ex: "D'Ávila")
+        // porque não montamos mais onclick="...('${p.nome}')" como string
+        document.getElementById('listaPacientes').addEventListener('click', function(e) {
+            const btnEditar = e.target.closest('.btn-editar');
+            const btnExcluir = e.target.closest('.btn-excluir');
+
+            if (btnEditar) {
+                const id = parseInt(btnEditar.dataset.id, 10);
+                const paciente = pacientesCache.find(p => p.id === id);
+                if (paciente) editarPaciente(paciente);
+            }
+
+            if (btnExcluir) {
+                const id = parseInt(btnExcluir.dataset.id, 10);
+                deletarPaciente(id);
+            }
+        });
+
+        // EVENTO: Salvar / Atualizar Paciente com tratamento de erros
+        document.getElementById('formTriagem').addEventListener('submit', function(evento) {
+            evento.preventDefault();
+
+            const dadosPaciente = {
+                nome: document.getElementById('nome').value,
+                sintoma: document.getElementById('sintoma').value,
+                triagem: document.getElementById('triagem').value
+            };
+
+            const metodo = pacienteEmEdicaoId ? 'PUT' : 'POST';
+            const url = pacienteEmEdicaoId ? `/api/v1/pacientes/${pacienteEmEdicaoId}` : '/api/v1/pacientes';
+
+            fetch(url, {
+                method: metodo,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dadosPaciente)
+            })
+            .then(response => {
+                if (!response.ok) throw new Error(`Erro HTTP ${response.status}`);
+                return response.json();
+            })
+            .then(data => {
+                resetarFormulario();
+                carregarPacientes(); 
+            })
+            .catch(err => {
+                console.error('Erro ao salvar paciente:', err);
+                alert('Erro ao salvar paciente. O banco de dados pode estar bloqueado por permissões de segurança (RLS).');
+            });
+        });
+
+        // FUNÇÃO: Preparar formulário para edição (agora recebe o objeto paciente inteiro)
+        function editarPaciente(paciente) {
+            pacienteEmEdicaoId = paciente.id;
+            document.getElementById('nome').value = paciente.nome;
+            document.getElementById('sintoma').value = paciente.sintoma;
+            document.getElementById('triagem').value = paciente.triagem;
+            document.getElementById('btnSalvar').innerText = "Atualizar Registro";
+            document.getElementById('btnCancelar').style.display = "inline-block";
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // FUNÇÃO: Deletar paciente com tratamento de erros
+        function deletarPaciente(id) {
+            if(!confirm("Tem certeza que deseja excluir este paciente?")) return;
+            
+            fetch(`/api/v1/pacientes/${id}`, { method: 'DELETE' })
+                .then(response => {
+                    if (!response.ok) throw new Error(`Erro HTTP ${response.status}`);
+                    return response.json();
+                })
+                .then(() => carregarPacientes())
+                .catch(err => {
+                    console.error('Erro ao deletar paciente:', err);
+                    alert('Erro ao excluir paciente da base. Veja o console.');
+                });
+        }
+
+        // FUNÇÃO: Limpar a tela
+        function resetarFormulario() {
+            pacienteEmEdicaoId = null;
+            document.getElementById('formTriagem').reset();
+            document.getElementById('btnSalvar').innerText = "Salvar Registro";
+            document.getElementById('btnCancelar').style.display = "none";
+        }
+
+        // INICIALIZAÇÃO
+        carregarPacientes();
+    </script>
+</body>
+</html>

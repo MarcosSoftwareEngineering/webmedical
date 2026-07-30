@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebMedical - Acesso ao Sistema</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+        
+        body {
+            background: url('https://images.unsplash.com/photo-1499951360447-b19be8fe80f5?q=80&w=2070&auto=format&fit=crop') no-repeat center center/cover;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        body::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.4); backdrop-filter: blur(3px); z-index: 0;
+        }
+
+        .login-wrapper { z-index: 1; animation: fadeInUp 0.8s ease-out; }
+
+        .login-card {
+            background: #f0f4f8;
+            width: 380px;
+            border-radius: 12px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.8);
+        }
+
+        .login-header {
+            background: linear-gradient(135deg, #023a70, #008b9e);
+            color: white;
+            text-align: center;
+            padding: 30px 20px;
+            border-bottom: 3px solid #0056b3;
+        }
+
+        .login-header h2 { font-size: 24px; font-weight: 500; letter-spacing: 1.5px; }
+        .login-header p { font-size: 14px; margin-top: 5px; opacity: 0.9; }
+        .login-header #saudacao { font-weight: 600; font-size: 16px; margin-top: 5px; color: #f1c40f; }
+
+        .login-body { padding: 30px 25px; }
+
+        .input-group {
+            display: flex;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border-radius: 4px;
+            overflow: hidden;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .input-group:focus-within { box-shadow: 0 0 0 2px #008b9e; transform: translateY(-2px); }
+
+        .input-icon {
+            background: #1994d2;
+            color: white;
+            padding: 12px 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 50px;
+        }
+
+        .input-group input {
+            flex: 1;
+            padding: 12px;
+            padding-right: 35px; 
+            border: none;
+            outline: none;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .asterisco-vermelho {
+            color: #e74c3c;
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 18px;
+            font-weight: bold;
+            pointer-events: none; 
+        }
+
+        .forgot-password {
+            text-align: right;
+            margin-top: -10px;
+            margin-bottom: 15px;
+        }
+        
+        .forgot-password a {
+            font-size: 12px;
+            color: #1994d2;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .forgot-password a:hover {
+            color: #023a70;
+            text-decoration: underline;
+        }
+
+        .btn-container { display: flex; gap: 10px; margin-top: 5px; }
+
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 4px;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:active { transform: scale(0.95); }
+        .btn-cadastrar { background: #e74c3c; }
+        .btn-cadastrar:hover { background: #c0392b; }
+        .btn-entrar { background: #3498db; }
+        .btn-entrar:hover { background: #2980b9; }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-2px, 0, 0); }
+            20%, 80% { transform: translate3d(4px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-6px, 0, 0); }
+            40%, 60% { transform: translate3d(6px, 0, 0); }
+        }
+
+        #toast {
+            visibility: hidden; min-width: 250px; color: #fff; text-align: center;
+            border-radius: 8px; padding: 16px; position: fixed; z-index: 1000;
+            left: 50%; transform: translateX(-50%); top: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2); opacity: 0; transition: opacity 0.3s, top 0.3s;
+            font-weight: 500; display: flex; align-items: center; gap: 10px;
+        }
+        #toast.show { visibility: visible; opacity: 1; top: 50px; }
+        .toast-success { background-color: #2ecc71; }
+        .toast-error { background-color: #e74c3c; }
+
+    </style>
+</head>
+<body>
+
+    <div id="toast"><i id="toast-icon" class="fas"></i> <span id="toast-msg">Mensagem</span></div>
+
+    <div class="login-wrapper">
+        <div class="login-card" id="loginCard">
+            
+            <div class="login-header">
+                <h2>WEBMEDICAL</h2>
+                <p>Entre com a senha</p>
+                <div id="saudacao">Carregando...</div>
+            </div>
+
+            <div class="login-body">
+                <form id="form-login">
+                    
+                    <div class="input-group">
+                        <div class="input-icon"><i class="fas fa-envelope"></i></div>
+                        <!-- CAMPO DE E-MAIL (Obrigatório) -->
+                        <input type="email" id="email" placeholder="Ex: dr.marcos@email.com" required autocomplete="off">
+                        <span class="asterisco-vermelho">*</span>
+                    </div>
+                    
+                    <div class="input-group">
+                        <div class="input-icon"><i class="fas fa-mobile-alt"></i></div>
+                        <input type="text" id="login" placeholder="Ex: (71)987772416" required autocomplete="off">
+                        <span class="asterisco-vermelho">*</span>
+                    </div>
+                    
+                    <div class="input-group">
+                        <div class="input-icon"><i class="fas fa-key"></i></div>
+                        <input type="password" id="senha" placeholder="Ex: M@d1c0" required minlength="5" maxlength="15">
+                        <span class="asterisco-vermelho">*</span>
+                    </div>
+
+                    <!-- LINK ESQUECEU A SENHA -->
+                    <div class="forgot-password">
+                        <a href="#" onclick="solicitarRecuperacao()">Esqueceu a senha?</a>
+                    </div>
+
+                    <div class="btn-container">
+                        <button type="button" class="btn btn-cadastrar" id="btnCadastrar" onclick="cadastrar()">
+                            <i class="fas fa-user-plus"></i> Cadastrar
+                        </button>
+                        <button type="submit" class="btn btn-entrar" id="btnEntrar">
+                            <i class="fas fa-lock"></i> Entrar
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function atualizarSaudacao() {
+            const hora = new Date().getHours();
+            let saudacaoText = "";
+            if (hora >= 5 && hora < 12) saudacaoText = "Bom dia";
+            else if (hora >= 12 && hora < 18) saudacaoText = "Boa tarde";
+            else saudacaoText = "Boa noite";
+            document.getElementById('saudacao').innerText = saudacaoText;
+        }
+        atualizarSaudacao();
+
+        function showToast(message, tipo) {
+            const toast = document.getElementById("toast");
+            const icon = document.getElementById("toast-icon");
+            document.getElementById("toast-msg").innerText = message;
+            
+            toast.className = "show";
+            if (tipo === 'sucesso') {
+                toast.classList.add("toast-success");
+                icon.className = "fas fa-check-circle";
+            } else {
+                toast.classList.add("toast-error");
+                icon.className = "fas fa-exclamation-triangle";
+                const card = document.getElementById('loginCard');
+                card.classList.add('shake');
+                setTimeout(() => card.classList.remove('shake'), 500);
+            }
+            setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3500);
+        }
+
+        function toggleLoading(btnId, isLoading, defaultText, iconClass) {
+            const btn = document.getElementById(btnId);
+            if(isLoading) {
+                btn.disabled = true;
+                btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Aguarde...`;
+                btn.style.opacity = '0.7';
+            } else {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="${iconClass}"></i> ${defaultText}`;
+                btn.style.opacity = '1';
+            }
+        }
+
+        // FUNÇÃO DE LOGIN
+        document.getElementById('form-login').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const senha = document.getElementById('senha').value;
+            if(senha.length < 5 || senha.length > 15) {
+                showToast("A senha deve ter entre 5 e 15 caracteres!", "erro");
+                return;
+            }
+
+            toggleLoading('btnEntrar', true, 'Entrar', 'fas fa-lock');
+
+            const dados = {
+                login: document.getElementById('login').value,
+                senha: senha
+            };
+
+            fetch('/api/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(dados)
+            })
+            .then(res => res.json().then(data => ({status: res.status, body: data})))
+            .then(res => {
+                if(res.status === 200) {
+                    showToast("Login autorizado! Redirecionando...", "sucesso");
+                    setTimeout(() => { window.location.href = '/dashboard'; }, 1000);
+                } else {
+                    toggleLoading('btnEntrar', false, 'Entrar', 'fas fa-lock');
+                    showToast(res.body.message || "Credenciais inválidas!", "erro");
+                }
+            })
+            .catch(() => {
+                toggleLoading('btnEntrar', false, 'Entrar', 'fas fa-lock');
+                showToast("Erro ao conectar com o servidor.", "erro");
+            });
+        });
+
+        // FUNÇÃO DE CADASTRO
+        function cadastrar() {
+            const dados = {
+                email: document.getElementById('email').value,
+                login: document.getElementById('login').value,
+                senha: document.getElementById('senha').value
+            };
+
+            if(!dados.email || !dados.login || !dados.senha) {
+                showToast("Preencha E-mail, Celular e Senha para cadastrar!", "erro");
+                return;
+            }
+
+            if(dados.senha.length < 5 || dados.senha.length > 15) {
+                showToast("A senha deve ter entre 5 e 15 caracteres!", "erro");
+                return;
+            }
+
+            toggleLoading('btnCadastrar', true, 'Cadastrar', 'fas fa-user-plus');
+
+            fetch('/api/cadastro', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(dados)
+            })
+            .then(res => res.json().then(data => ({status: res.status, body: data})))
+            .then(res => {
+                toggleLoading('btnCadastrar', false, 'Cadastrar', 'fas fa-user-plus');
+                if (res.status === 201) {
+                    showToast("Usuário criado! Agora clique em Entrar.", "sucesso");
+                } else {
+                    showToast(res.body.message || "Celular/E-mail já cadastrado!", "erro");
+                }
+            })
+            .catch(() => {
+                toggleLoading('btnCadastrar', false, 'Cadastrar', 'fas fa-user-plus');
+                showToast("Erro ao conectar com o servidor.", "erro");
+            });
+        }
+
+        // FUNÇÃO DE RECUPERAÇÃO DE SENHA
+        function solicitarRecuperacao() {
+            const email = document.getElementById('email').value;
+            
+            if(!email) {
+                showToast("Digite seu e-mail no campo acima para recuperar a senha!", "erro");
+                document.getElementById('email').focus();
+                return;
+            }
+
+            // Exibe mensagem visual temporária
+            showToast("Buscando e-mail no sistema...", "sucesso");
+
+            fetch('/api/recuperar_senha', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ email: email })
+            })
+            .then(res => res.json().then(data => ({status: res.status, body: data})))
+            .then(res => {
+                if (res.status === 200) {
+                    showToast(res.body.message, "sucesso");
+                } else {
+                    showToast(res.body.message, "erro");
+                }
+            })
+            .catch(() => {
+                showToast("Erro ao comunicar com o servidor.", "erro");
+            });
+        }
+    </script>
+</body>
+</html>
